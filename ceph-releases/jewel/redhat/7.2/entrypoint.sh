@@ -22,6 +22,7 @@ set -e
 : ${RGW_ZONEGROUP:=}
 : ${RGW_ZONE:=}
 : ${RGW_CIVETWEB_PORT:=8080}
+: ${RGW_CIVETWEB_SPORT:=8443s}
 : ${RGW_REMOTE_CGI:=0}
 : ${RGW_REMOTE_CGI_PORT:=9000}
 : ${RGW_REMOTE_CGI_HOST:=0.0.0.0}
@@ -616,7 +617,13 @@ function start_rgw {
   if [ "$RGW_REMOTE_CGI" -eq 1 ]; then
     /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="fastcgi socket_port=$RGW_REMOTE_CGI_PORT socket_host=$RGW_REMOTE_CGI_HOST" --setuser ceph --setgroup ceph
   else
+    if [ -f /etc/secrets/cert.pem ]; then
+      echo "Starting secured RGW"
+    /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="civetweb port=${RGW_CIVETWEB_SPORT} ssl_certificate=/etc/secrets/cert.pem" --setuser ceph --setgroup ceph
+    else
+      echo "WARNING : Starting NON secured RGW"
     /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="civetweb port=$RGW_CIVETWEB_PORT" --setuser ceph --setgroup ceph
+    fi
   fi
 }
 
